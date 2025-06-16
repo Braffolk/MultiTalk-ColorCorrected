@@ -54,6 +54,10 @@ def _validate_args(args):
         args.
         task], f"Unsupport size {args.size} for task {args.task}, supported sizes are: {', '.join(SUPPORTED_SIZES[args.task])}"
 
+    if hasattr(args, 'color_correction_strength'):
+        assert 0.0 <= args.color_correction_strength <= 1.0, \
+            f"color_correction_strength must be between 0.0 and 1.0, got {args.color_correction_strength}"
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(
@@ -167,6 +171,12 @@ def _parse_args():
         type=float,
         default=4.0,
         help="Classifier free guidance scale for audio control.")
+    parser.add_argument(
+        "--color_correction_strength",
+        type=float,
+        default=0.0,
+        help="Strength of color correction (0.0 to 1.0). 0.0 means no correction. Applied between chunks and to final output."
+    )
     parser.add_argument(
         "--num_persistent_param_in_dit",
         type=int,

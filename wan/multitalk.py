@@ -29,6 +29,9 @@ from .utils.multitalk_utils import MomentumBuffer, adaptive_projected_guidance
 from src.vram_management import AutoWrappedLinear, AutoWrappedModule, enable_vram_management
 
 
+# Import for color correction
+from .utils.color_correction import match_and_blend_colors
+
 def torch_gc():
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
@@ -325,6 +328,9 @@ class MultiTalkPipeline:
                 If True, offloads models to CPU during generation to save VRAM
         """
 
+        # Get color correction strength from extra_args, defaulting to 0.0 if not present
+        color_correction_strength = getattr(extra_args, 'color_correction_strength', 0.0)
+
         # init teacache
         if extra_args.use_teacache:
             self.model.teacache_init(
@@ -356,6 +362,11 @@ class MultiTalkPipeline:
         cond_image = cond_image / 255
         cond_image = (cond_image - 0.5) * 2 # normalization
         cond_image = cond_image.to(self.device)  # 1 C 1 H W
+
+        # Store the original image for color reference if strength > 0
+        original_color_reference = None
+        if color_correction_strength > 0.0:
+            original_color_reference = cond_image.clone()
 
 
         # read audio embeddings
@@ -650,10 +661,18 @@ class MultiTalkPipeline:
                         self.model.cpu()
                 torch_gc()
 
-                videos = self.vae.decode(x0) 
+                decoded_videos_list = self.vae.decode(x0) # Returns a list of tensors
+
+                # >>> START OF COLOR CORRECTION STEP <<<
+                if color_correction_strength > 0.0 and original_color_reference is not None and not is_first_clip and decoded_videos_list:
+                    # Process the first tensor in the list (assuming it's the main video output)
+                    video_to_correct = decoded_videos_list[0]
+                    corrected_video = match_and_blend_colors(video_to_correct, original_color_reference, color_correction_strength)
+                    decoded_videos_list = [corrected_video] + decoded_videos_list[1:]
+                # >>> END OF COLOR CORRECTION STEP <<<
             
             # cache generated samples
-            videos = torch.stack(videos).cpu() # B C T H W
+            videos = torch.stack(decoded_videos_list).cpu() # B C T H W
             if is_first_clip:
                 gen_video_list.append(videos)
             else:

@@ -78,6 +78,29 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 > - 📺 **​​​​Resolution Flexibility​​**​​: 480p & 720p output at arbitrary aspect ratios
 > - ⏱️ **Long Video Generation**: Support video generation up to 15 seconds
 
+
+
+## 🎨 Color Drift Correction (Fork Feature)
+
+This fork introduces a feature aimed at reducing color drift, particularly in longer video generations or when consistent color is critical.
+
+**Method:**
+The approach involves matching the color characteristics of each newly generated video segment (chunk) to the original input source image. This is done by:
+1.  Converting both the reference source image and the current video chunk to the Lab color space. The Lab space separates lightness from color information, allowing for more targeted color adjustments.
+2.  Calculating the mean and standard deviation of the L (lightness), a (green-red), and b (blue-yellow) channels for both the reference and the current chunk.
+3.  Adjusting the Lab channels of the current chunk to match the statistics of the reference image.
+4.  Converting the corrected chunk back to the RGB color space.
+5.  A `--color_correction_strength` parameter (0.0 to 1.0) allows blending between the original chunk and the fully color-corrected chunk, providing control over the intensity of the effect.
+
+This correction is applied after each chunk is generated and before it's used as a basis for the next chunk, helping to maintain color consistency throughout the video.
+
+**Use Cases & Limitations:**
+-   **Great for:** Videos with a relatively fixed view or static background where maintaining the initial color palette is important.
+-   **May not be ideal for:** Scenarios with significant intentional lighting changes or dynamic camera movements that would naturally alter the overall color composition of the scene. While MultiTalk is not typically used for extensive camera movement, this is a consideration.
+
+This feature helps ensure that the generated video remains more faithful to the color profile of the initial input image over time.
+
+
 ## 🔥 Latest News
 
 * June 14, 2025: 🔥🔥 We release `MultiTalk` with support for `multi-GPU inference`, `teacache acceleration`, `APG` and `low-VRAM inference` (enabling 480P video generation on a single RTX 4090). [APG](https://arxiv.org/abs/2410.02416) is used to alleviate the color error accumulation in long video generation. TeaCache is capable of increasing speed by approximately 2~3x.
@@ -189,6 +212,7 @@ Our model is compatible with both 480P and 720P resolutions. The current code on
 --size multitalk-720: generate 720P video.
 --use_apg: run with APG.
 --teacache_thresh: A coefficient used for TeaCache acceleration
+--color_correction_strength: Strength of color correction (0.0 to 1.0, default: 0.0). 0.0 means no correction. Applied between chunks and to final output to reduce color drift.
 ```
 
 #### 1. Single-Person
