@@ -5,9 +5,10 @@ from .fm_solvers import (
 )
 from .fm_solvers_unipc import FlowUniPCMultistepScheduler
 from .vace_processor import VaceVideoProcessor
+from .color_correction import match_and_blend_colors
 
 __all__ = [
     'HuggingfaceTokenizer', 'get_sampling_sigmas', 'retrieve_timesteps',
     'FlowDPMSolverMultistepScheduler', 'FlowUniPCMultistepScheduler',
-    'VaceVideoProcessor'
+    'VaceVideoProcessor', 'match_and_blend_colors'
 ]
