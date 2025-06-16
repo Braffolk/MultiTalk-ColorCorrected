@@ -99,7 +99,7 @@ def match_and_blend_colors(source_chunk: torch.Tensor, reference_image: torch.Te
     # Permute back to (C, T, H, W), add batch dim, and convert to original torch.Tensor type and device
     # (T, H, W, C) -> (C, T, H, W)
     corrected_chunk_tensor = torch.from_numpy(corrected_chunk_np_minus1_1).permute(3, 0, 1, 2).unsqueeze(0)
-    
+    corrected_chunk_tensor = corrected_chunk_tensor.contiguous() # Ensure contiguous memory layout
     return corrected_chunk_tensor.to(device=device, dtype=dtype)
 
 if __name__ == '__main__':
