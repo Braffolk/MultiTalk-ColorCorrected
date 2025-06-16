@@ -661,18 +661,22 @@ class MultiTalkPipeline:
                         self.model.cpu()
                 torch_gc()
 
-                decoded_videos_list = self.vae.decode(x0) # Returns a list of tensors
+                decoded_videos_list = self.vae.decode(x0) # Expected to be a list, e.g. [(C,T,H,W)_tensor]
 
+                # This will be the tensor for the current chunk, should be (B,C,T,H,W)
+                # Ensure it's 5D (B,C,T,H,W) before color correction
+                current_chunk_tensor_gpu = decoded_videos_list[0]
+                if current_chunk_tensor_gpu.dim() == 4: # If (C,T,H,W)
+                    current_chunk_tensor_gpu = current_chunk_tensor_gpu.unsqueeze(0) # Make it (1,C,T,H,W)
+                
                 # >>> START OF COLOR CORRECTION STEP <<<
-                if color_correction_strength > 0.0 and original_color_reference is not None and not is_first_clip and decoded_videos_list:
-                    # Process the first tensor in the list (assuming it's the main video output)
-                    video_to_correct = decoded_videos_list[0]
-                    corrected_video = match_and_blend_colors(video_to_correct, original_color_reference, color_correction_strength)
-                    decoded_videos_list = [corrected_video] + decoded_videos_list[1:]
+                if color_correction_strength > 0.0 and original_color_reference is not None:
+                    current_chunk_tensor_gpu = match_and_blend_colors(current_chunk_tensor_gpu, original_color_reference, color_correction_strength)
                 # >>> END OF COLOR CORRECTION STEP <<<
             
             # cache generated samples
-            videos = torch.stack(decoded_videos_list).cpu() # B C T H W
+            # current_chunk_tensor_gpu is now (1,C,T,H,W), processed or not
+            videos = current_chunk_tensor_gpu.cpu().contiguous()
             if is_first_clip:
                 gen_video_list.append(videos)
             else:

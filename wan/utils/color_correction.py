@@ -18,7 +18,10 @@ def match_and_blend_colors(source_chunk: torch.Tensor, reference_image: torch.Te
     Returns:
         torch.Tensor: The color-corrected and blended video chunk.
     """
+    # print(f"[match_and_blend_colors] Input source_chunk shape: {source_chunk.shape}, reference_image shape: {reference_image.shape}, strength: {strength}")
+
     if strength == 0.0:
+        # print(f"[match_and_blend_colors] Strength is 0, returning original source_chunk.")
         return source_chunk
 
     if not 0.0 <= strength <= 1.0:
@@ -100,48 +103,6 @@ def match_and_blend_colors(source_chunk: torch.Tensor, reference_image: torch.Te
     # (T, H, W, C) -> (C, T, H, W)
     corrected_chunk_tensor = torch.from_numpy(corrected_chunk_np_minus1_1).permute(3, 0, 1, 2).unsqueeze(0)
     corrected_chunk_tensor = corrected_chunk_tensor.contiguous() # Ensure contiguous memory layout
-    return corrected_chunk_tensor.to(device=device, dtype=dtype)
-
-if __name__ == '__main__':
-    # Basic test case
-    print("Running basic test for match_and_blend_colors...")
-    B, C, T, H, W = 1, 3, 5, 64, 64 # Batch, Channels, Time, Height, Width
-    
-    # Create a dummy source chunk (e.g., mostly red)
-    source = torch.ones((B, C, T, H, W), dtype=torch.float32) * -1.0 # Start with -1
-    source[:, 0, :, :, :] = 0.8 # Red channel high
-    source[:, 1, :, :, :] = -0.5 # Green channel low
-    source[:, 2, :, :, :] = -0.8 # Blue channel low
-
-    # Create a dummy reference image (e.g., mostly blue)
-    reference = torch.ones((B, C, 1, H, W), dtype=torch.float32) * -1.0
-    reference[:, 0, :, :, :] = -0.8 # Red channel low
-    reference[:, 1, :, :, :] = -0.5 # Green channel low
-    reference[:, 2, :, :, :] = 0.8 # Blue channel high
-
-    strength_test = 0.75
-    
-    print(f"Source shape: {source.shape}, Reference shape: {reference.shape}, Strength: {strength_test}")
-    
-    corrected_tensor = match_and_blend_colors(source.clone(), reference.clone(), strength_test)
-    print(f"Corrected tensor shape: {corrected_tensor.shape}")
-    print(f"Corrected tensor dtype: {corrected_tensor.dtype}")
-
-    # Check a few values (example)
-    print(f"Original source (R channel, 1st frame, 1st pixel): {source[0, 0, 0, 0, 0].item():.3f}")
-    print(f"Corrected (R channel, 1st frame, 1st pixel): {corrected_tensor[0, 0, 0, 0, 0].item():.3f}")
-    
-    print(f"Original source (B channel, 1st frame, 1st pixel): {source[0, 2, 0, 0, 0].item():.3f}")
-    print(f"Corrected (B channel, 1st frame, 1st pixel): {corrected_tensor[0, 2, 0, 0, 0].item():.3f}")
-
-    # Test strength = 0
-    corrected_strength_0 = match_and_blend_colors(source.clone(), reference.clone(), 0.0)
-    assert torch.allclose(source, corrected_strength_0), "Strength 0.0 did not return original tensor"
-    print("Strength 0.0 test passed.")
-
-    # Test strength = 1 (should be different from source, closer to reference color profile)
-    corrected_strength_1 = match_and_blend_colors(source.clone(), reference.clone(), 1.0)
-    assert not torch.allclose(source, corrected_strength_1), "Strength 1.0 returned original tensor (unexpected for different images)"
-    print("Strength 1.0 test produced a different tensor (as expected).")
-    
-    print("Basic test completed.")
+    output_tensor = corrected_chunk_tensor.to(device=device, dtype=dtype)
+    # print(f"[match_and_blend_colors] Output tensor shape: {output_tensor.shape}")
+    return output_tensor
