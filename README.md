@@ -82,6 +82,8 @@ We propose **MultiTalk** , a novel framework for audio-driven multi-person conve
 
 ## 🎨 Color Drift Correction (Fork Feature)
 
+<img src="assets/colors-grid.png">
+
 This fork introduces a feature aimed at reducing color drift, particularly in longer video generations or when consistent color is critical.
 
 **Method:**
